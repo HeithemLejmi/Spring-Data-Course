@@ -27,13 +27,15 @@ public class CourseSpringDataOverviewApplicationTests {
 		flight.setDestination("Monastir");
 		flight.setScheduleAt(LocalDateTime.now().plusDays(7));
 		entityManager.persist(flight);
-		//entityManager.flush();
+		entityManager.flush();
 
 		final TypedQuery<Flight> flights = entityManager.createQuery("SELECT f from Flight f", Flight.class);
 		List<Flight> resultList = flights.getResultList();
 
-		Assertions.assertThat(resultList).hasSize(1);
-		Assertions.assertThat(resultList.get(0)).isEqualTo(flight);
+		Assertions.assertThat(resultList)
+				.hasSize(1)
+				.first()
+				.isEqualTo(flight);
 	}
 
 }
