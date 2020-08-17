@@ -28,6 +28,10 @@ public class Flight {
         return scheduleAt;
     }
 
+    public Long getId(){
+        return id;
+    }
+
 
     public void setOrigin(String origin) {
         this.origin = origin;
