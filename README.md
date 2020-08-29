@@ -178,6 +178,7 @@ Our code is making use of the Repository interface provided by Spring Data Commo
   -  The Repository interface (pattern) is always the same.
 
 ##### b. Steps to swap from Spring Data JPA Module to another Spring Data Module (for exp: MongoDB Module)
+These steps are summarized in this (PullRequest)[https://github.com/HeithemLejmi/Spring-Data-Course/pull/3].
 - Change the Maven dependencies (in *pom.xml*) : from Spring Data JPA Module <-to-> Spring Data MongoDB Module and then swithch the embedded database from H2 <-to-> MongoDB.
 - Remapping our entities, by: 
   - removing the @Entity annotation (it is a JPA annotation) from the entities classes
