@@ -133,6 +133,59 @@ Page<Flight> findAll(Pageable pageable);
 
 
 #### 4. Swapping Modules:
+##### a. Context :
+In this section, we're going to try switching our project from **Spring Data JPA Module** to **Spring Data MongoDB Module** as a proof of context of the generic nature of Spring Data Commons.
+So far, our application architecture looks something like this:
+Our code is making use of the Repository interface provided by Spring Data Commons in order to interact with the database. 
+
+- We're using Spring Data JPA Module (a module from Spring Data Commons Project), so this Repository interface wraps JPA data access code. We never see or touch this code directly, instead only working with the repository. 
+    
+    ```
+    <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+    ```
+    - We're also using an embedded H2 database, the lifecycle of which is managed by our unit test. 
+
+    ```
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+    ```
+- Now because we use Spring Data, if we wanted to migrate to a different database, such as MongoDB, a document database, then things wouldn't change so much at all. 
+  - We will only need to swap spring data modules:
+
+    ```
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-mongodb</artifactId>
+		</dependency>
+    ```
+  - Of course, our embedded database will change to an embedded MongoDB, but Spring Boot will help us get started with that quickly too:
+    ```
+    <dependency>
+        <groupId>de.flapdoodle.embed</groupId>
+        <artifactId>de.flapdoodle.embed.mongo</artifactId>
+        <scope>test</scope>
+    </dependency>
+    ```
+
+- **Conclusion :** Regardless whether we used a H2 database (with Spring Data JPA Module) or a MongoDB database (with Spring Data MongoDB Module) : the Repository interface we're using should always be the same (the same CRUDRepository, paging and sorting abstractions, and even derived query method signatures). So there should be very little refactoring required. It is proof that:
+  -  All Spring Data modules are following the same programming model via Spring Data Commons. 
+  -  The Repository interface (pattern) is always the same.
+
+##### b. Steps to swap from Spring Data JPA Module to another Spring Data Module (for exp: MongoDB Module)
+- Change the Maven dependencies (in *pom.xml*) : from Spring Data JPA Module <-to-> Spring Data MongoDB Module and then swithch the embedded database from H2 <-to-> MongoDB.
+- Remapping our entities, by: 
+  - removing the @Entity annotation (it is a JPA annotation) from the entities classes
+  - changing the type of the entity id to String, since MongoDB requires that the key of entities should be of type String.
+- Leave the Repository Interfaces untouched:
+  - no need to modify the signatures or the return types of the methods in the Repository.
+  - we only need to make sure that the id of the entity (associated to this Repository is of type String as well)
+- Change the annotation of the Test Classes from @DataJPATest to @DataMongoTest.
 
 #### 2. Custom Implementation:
 
