@@ -1,16 +1,9 @@
 package com.pluralsight.coursespringdataoverview.entity;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import java.time.LocalDateTime;
 
-@Entity
 public class Flight {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+    private String id;
 
     private String origin;
     private String destination;
@@ -28,7 +21,7 @@ public class Flight {
         return scheduleAt;
     }
 
-    public Long getId(){
+    public String getId(){
         return id;
     }
 
