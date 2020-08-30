@@ -195,21 +195,22 @@ To get it to work, we're going to create a custom repository interface (an addit
 
 First, let's generate an additional repository interface, which does not inherit from the Spring Data repository : let's call it *DeleteFlightRepository*. We'll define our custom method deleteByOrigin here, navigate to our existing Spring Data repository *FlightRepository*, and make it extend this custom interface. 
 
-    ```
-    public interface DeleteFlightRepository {
+```java
+  public interface DeleteFlightRepository {
 
-      public void deleteByOrigin(String origin);
+    public void deleteByOrigin(String origin);
 
-    }
-    ```
-    ```
-    public interface FlightRepository extends PagingAndSortingRepository<Flight, Long> , DeleteFlightRepository {
+  }
+```
+  
+```java
+  public interface FlightRepository extends PagingAndSortingRepository<Flight, Long> , DeleteFlightRepository {
       ...
-    }
-    ```
+  }
+```
 
 It's important we do it this way as putting a method on a separate interface allows us to create a custom implementation of it. Let's do this by creating a subclass called DeleteByOriginRepositoryImpl. Now we can literally put any code we want here, even code that wasn't data access code. But for this example, we'll just use the JPA EntityManager to perform the delete query. We'll inject the EntityManager by making it a constructor argument and then create a native delete query, DELETE from flight WHERE origin is equal to our provided parameter:
-```
+```java
 public class DeleteFlightRepositoryImpl implements DeleteFlightRepository {
 
     private EntityManager entityManager;
@@ -226,4 +227,82 @@ public class DeleteFlightRepositoryImpl implements DeleteFlightRepository {
 }
 ```
 
-### Transcations:
+### Transcations: [here](https://github.com/HeithemLejmi/Spring-Data-Course/blob/master/doc/working-with-transactions-slides.pdf)
+
+**1. What is a Transaction ?**
+
+  *- Why Do we need Transactions ?* 
+
+**Scenario**: Imagine we had an application that allows a customer to book a ticket for an event.: When the customer books a ticket, two actions (two java methods) are trigged : we will first **allocate a seat within the venue to them** and also **take a payment for the transaction**. Once both these things have taken place: **then the customer's booking will be completed, and we can send them their ticket**. 
+
+```java
+public void bookTicket(Booking booking){
+  // 1st method
+  allocateASeat(booking.getSeat());
+
+  // 2nd method
+  makeAPayment(booking.getCardDetails());
+}
+```
+**Problem**: *However, if the payment request failed without transactions, we would have a problem. This is because the first step, seat allocation, would still be successful, meaning the seat would be taken up when there's no ticket associated with it.* 
+
+**Solution**: If we wrapped queries in a transaction, then things would be different. This is because a single transaction contains multiple queries, **which either all take place or do not take place at all**. So if our payment request failed, the whole transaction would fail, rolling back the seat's allocation so there's no longer one allocated in error :
+
+```java
+@Transactional
+public void bookTicket(Booking booking){
+  // 1st method
+  allocateASeat(booking.getSeat());
+
+  // 2nd method
+  makeAPayment(booking.getCardDetails());
+}
+
+```
+  *- Transactions Definition :* 
+We describe a transaction as having A.C.I.D guarantees, meaning it's **Atomic** so it either all happens or does not happen at all, it's **Consistent**, meaning the data written is valid according to the various constraints, **Isolated**, meaning another transaction cannot see the results of the transaction until it's committed, and it's **Durable** meaning the results of the transaction are written to disk.
+
+2. What are the Problems that we may run to while coding with our own Transcations Management ?
+
+The biggest problem with managing Transactions "without Spring" is the boilerplate code that we have to repeatedly write everytime we want to manage a method as Transactioanal:
+
+Okay, let's take a look at how we might execute our code in a transaction without Spring. Here's our method, **bookTicket()**, which will allocate the seat and make the payment. Wrapping it in a transaction, first of all, introduces a ton of boilerplate. In this case, the boilerplate is Hibernate. We need to start the transaction, commit the transaction, remember to wrap it in a try-catch block so we can roll the transaction back if there's an exception, and also add a finally block so we always close the session after our transaction completes. 
+
+```java
+// Start a session (Hibernate)
+Session session = factory.openSession();
+Transaction tx;
+try {
+  // Start a Transaction:
+  tx = session.beginTransaction();
+
+  bookTicket(ticket, payment);
+  
+  // Commit the Transaction
+  tx.commit();
+} catch (Exception e) {
+  // RollBack if there is an Exception during the Transaction
+  if (tx != null) tx.rollback();
+  throw e;
+} finally {
+  // At the end close the session
+  session.close();
+}
+```
+
+Now wouldn't it be great if we could make our bookTicket method transactional without having to write any of that code: that's why Spring Core provides us with the annotation **@Transactional** to do all this boilerplate code **behind the scenes** for us. 
+
+3. How to use Spring and Spring Data to manage our Transactions ?
+
+Well, with Core Spring we can do this simply by annotating our method with @Transactional. This declarative annotation does all of the boilerplate for us. 
+
+An oversimplified explanation is that at runtime, Spring will create a proxy, which intercepts calls to @Transactional methods and executes the transaction boilerplate for us eventually calling the real method during this transaction. So you can be confident that declaring something is @Transactional will mean that transaction will be started before the method is called and then committed a rollback after the method is called as long as the annotation is on a Spring managed bean. 
+
+It's also important to note that Spring transaction management technically comes from Core Spring, not from Spring Data. However, as transactions and Spring Data are so heavily used together, it makes logical sense to cover them both in an overview course. 
+
+So just to be clear about the benefits of transaction management with Spring or Spring Data:
+- the first is that we remove a ton of boilerplate. What was once rings of code is now a simple annotation on a method, which means developers can focus on writing their queries instead of the scaffolding for those queries. 
+- It's also declarative and non-invasive. The annotation isn't even part of the code. It's metadata meaning the code will contain only query logic. 
+- In turn, this makes bugs a lot less likely because the transaction code is now managed for us by Spring. 
+- And the main advantage from the point of view of Spring Data is that it's data-store agnostic. If you're working with a database that supports transactions, the corresponding Spring Data module will know how to generate the corresponding transaction code. If you're working with a non-transactional database, like Cassandra, then this annotation will do nothing.
+
