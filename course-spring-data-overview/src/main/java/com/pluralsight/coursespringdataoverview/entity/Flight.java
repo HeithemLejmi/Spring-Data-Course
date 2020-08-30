@@ -1,5 +1,9 @@
 package com.pluralsight.coursespringdataoverview.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.With;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -7,6 +11,9 @@ import javax.persistence.Id;
 import java.time.LocalDateTime;
 
 @Entity
+@With
+@AllArgsConstructor
+@NoArgsConstructor
 public class Flight {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

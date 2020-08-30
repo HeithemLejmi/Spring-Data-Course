@@ -188,5 +188,41 @@ Our code is making use of the Repository interface provided by Spring Data Commo
 - Change the annotation of the Test Classes from @DataJPATest to @DataMongoTest.
 
 #### 2. Custom Implementation:
+Sometimes, but rarely, the Spring Data Repository interface as in derived queries might not be enough for our use case. If this is the case, we can implement a repository method ourselves rather than leaving Spring Data to do it for us. 
+
+To get it to work, we're going to create a custom repository interface (an additional seperate repository interface, which does not inherit from the Spring Data repository). We'll then implement this custom interface with our own custom methods, after which we'll make our Spring Data repository extend it. 
+
+First, let's generate an additional repository interface, which does not inherit from the Spring Data repository : let's call it *DeleteFlightRepository*. We'll define our custom method deleteByOrigin here, navigate to our existing Spring Data repository *FlightRepository*, and make it extend this custom interface. 
+
+    ```
+    public interface DeleteFlightRepository {
+
+      public void deleteByOrigin(String origin);
+
+    }
+    ```
+    ```
+    public interface FlightRepository extends PagingAndSortingRepository<Flight, Long> , DeleteFlightRepository {
+      ...
+    }
+    ```
+
+It's important we do it this way as putting a method on a separate interface allows us to create a custom implementation of it. Let's do this by creating a subclass called DeleteByOriginRepositoryImpl. Now we can literally put any code we want here, even code that wasn't data access code. But for this example, we'll just use the JPA EntityManager to perform the delete query. We'll inject the EntityManager by making it a constructor argument and then create a native delete query, DELETE from flight WHERE origin is equal to our provided parameter:
+```
+public class DeleteFlightRepositoryImpl implements DeleteFlightRepository {
+
+    private EntityManager entityManager;
+
+    public DeleteFlightRepositoryImpl(EntityManager entityManager){
+        this.entityManager = entityManager;
+    }
+    @Override
+    public void deleteByOrigin(String origin) {
+        entityManager.createNativeQuery("DELETE from FLIGHT WHERE origin = ?")
+                .setParameter(1, origin)
+                .executeUpdate();
+    }
+}
+```
 
 ### Transcations:
