@@ -40,13 +40,14 @@ In a nutshell, the **repository pattern** is a *persistence ignorant data access
 The creation of traditional query (like: **NativeQuery**) can involve lots of boilerplate. Let's demonstrate this with an example: **NativeQuery** Vs **Derived Query**:
 - The method we have here is called findByName, and it will return our customers in the database with the given name:
   - NativeQuery: Although the signature straightforward is making it previous obvious to us what the method should do, we still have to implement the code to execute it.  In our case, we're using JPA, so that means creating a native query using the EntityManager, setting the parameters, and then returning the result as a list. And this doesn't even include the code required to convert our results into a list of the customer type. Now if we take a step back and look at this code, it's definitely filled with boilerplate because regardless of whatever read query we'd be doing, our code here would always look more or less the same apart from the query string and parameters. And actually, although the query string is unique, doesn't the method name already look similar to it?
-  ```
+  
+```java
 	public List<Customer> getCustomerByName(String name){
 		List<Customer> customers = entityManager
         .createNativeQuery(" select * from Customer where name = ? ", Customer.class)
-        .setParameter(1, origin)
+        .setParameter(1, name)
         .getResultList();
-	  return flights;
+	  return customers;
 	}
   ```
   
